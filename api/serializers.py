@@ -44,7 +44,12 @@ class ListingLocationSerializer(serializers.ModelSerializer):
 class ListingImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ListingImage
-        fields = ['id', 'image']
+        fields = ['id', 'image_url']
+
+    image_url = serializers.SerializerMethodField('get_image_url')
+
+    def get_image_url(self, obj):
+        return obj.image.url
 
     def save(self, **kwargs):
         image = ListingImage.objects.create(**self.validated_data, listing_id=self.context['listing_id'])
