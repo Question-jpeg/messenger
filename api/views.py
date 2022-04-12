@@ -19,7 +19,7 @@ class ListingViewSet(ModelViewSet):
     filterset_class = ListingFilter
     
     def get_serializer_context(self):
-        return {'user_id': self.request.user.id, 'listing_id': self.kwargs.get('pk', None)}
+        return {'request': self.request, 'user_id': self.request.user.id, 'listing_id': self.kwargs.get('pk', None)}
     
     def get_serializer_class(self):
         if self.request.method in ['POST', 'PUT', 'PATCH']:
@@ -55,3 +55,6 @@ class ListingLocationView(APIView):
         location = get_object_or_404(ListingLocation.objects.all(), listing=listing)
         return Response(ListingLocationSerializer(location).data, status=status.HTTP_200_OK)
 
+
+# class ListingImageView(APIView):
+#     def get(self, request, image_id)
