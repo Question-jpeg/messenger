@@ -15,6 +15,7 @@ django-filter = "*"
 pillow = "*"
 django-debug-toolbar = "*"
 whitenoise = "*"
+mysqlclient = "*"
 
 [dev-packages]
 autopep8 = "*"
