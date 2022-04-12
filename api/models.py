@@ -38,7 +38,7 @@ class Listing(models.Model):
         Category, on_delete=models.PROTECT, related_name='listings')
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='listings')
-    location = models.OneToOneField(ListingLocation, on_delete=models.SET_NULL, null=True, related_name='listing')
+    location = models.OneToOneField(ListingLocation, on_delete=models.SET_NULL, null=True, blank=True, related_name='listing')
 
 class ListingImage(models.Model):
     listing = models.ForeignKey(
