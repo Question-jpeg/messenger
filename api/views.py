@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404, render
+from django.db import transaction
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
@@ -34,7 +35,7 @@ class ListingImageViewSet(ModelViewSet):
     permission_classes = [IsObjInListingOwnerOrReadOnly, IsAuthenticated]
 
     def get_serializer_context(self):
-        return { 'listing_id': self.kwargs['listing_pk'] }
+        return { 'request': self.request, 'listing_id': self.kwargs['listing_pk'] }
 
     def get_queryset(self):
         return ListingImage.objects.filter(listing_id=self.kwargs['listing_pk'])
@@ -54,6 +55,16 @@ class ListingLocationView(APIView):
         listing = get_object_or_404(Listing.objects.all(), pk=listing_pk)
         location = get_object_or_404(ListingLocation.objects.all(), listing=listing)
         return Response(ListingLocationSerializer(location).data, status=status.HTTP_200_OK)
+
+    def delete(self, request, listing_pk):
+        with transaction.atomic():
+            listing = get_object_or_404(Listing.objects.all(), pk=listing_pk)
+            location = get_object_or_404(ListingLocation.objects.all(), listing=listing)
+            listing.location = None
+            listing.save(update_fields=['location'])
+            location.delete()
+            
+            return Response({}, status=status.HTTP_204_NO_CONTENT)
 
 
 # class ListingImageView(APIView):
