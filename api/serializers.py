@@ -44,7 +44,12 @@ class ListingLocationSerializer(serializers.ModelSerializer):
 class ListingImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ListingImage
-        fields = ['id', 'image']
+        fields = ['id', 'image_url']
+
+    image_url = serializers.SerializerMethodField(method_name='get_image_url')
+
+    def get_image_url(self, obj):
+        return self.context['request'].build_absolute_uri(f'/api/media/images/{obj.id}')
 
     def save(self, **kwargs):
         image = ListingImage.objects.create(**self.validated_data, listing_id=self.context['listing_id'])

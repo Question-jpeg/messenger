@@ -1,3 +1,4 @@
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.db import transaction
 from rest_framework.permissions import IsAuthenticated
@@ -18,10 +19,10 @@ class ListingViewSet(ModelViewSet):
     queryset = Listing.objects.prefetch_related('images').all()
     filter_backends = [DjangoFilterBackend]
     filterset_class = ListingFilter
-    
+
     def get_serializer_context(self):
         return {'request': self.request, 'user_id': self.request.user.id, 'listing_id': self.kwargs.get('pk', None)}
-    
+
     def get_serializer_class(self):
         if self.request.method in ['POST', 'PUT', 'PATCH']:
             return CreateListingSerializer
@@ -29,13 +30,12 @@ class ListingViewSet(ModelViewSet):
         return ListingSerializer
 
 
-
 class ListingImageViewSet(ModelViewSet):
     serializer_class = ListingImageSerializer
     permission_classes = [IsObjInListingOwnerOrReadOnly, IsAuthenticated]
 
     def get_serializer_context(self):
-        return { 'request': self.request, 'listing_id': self.kwargs['listing_pk'] }
+        return {'request': self.request, 'listing_id': self.kwargs['listing_pk']}
 
     def get_queryset(self):
         return ListingImage.objects.filter(listing_id=self.kwargs['listing_pk'])
@@ -46,26 +46,31 @@ class ListingLocationView(APIView):
     permission_classes = [IsObjInListingOwnerOrReadOnly, IsAuthenticated]
 
     def post(self, request, listing_pk):
-        serializer = ListingLocationSerializer(data=request.data, context={'listing_id': listing_pk})
+        serializer = ListingLocationSerializer(
+            data=request.data, context={'listing_id': listing_pk})
         serializer.is_valid(raise_exception=True)
         location = serializer.save()
         return Response(ListingLocationSerializer(location).data, status=status.HTTP_201_CREATED)
 
     def get(self, request, listing_pk):
         listing = get_object_or_404(Listing.objects.all(), pk=listing_pk)
-        location = get_object_or_404(ListingLocation.objects.all(), listing=listing)
+        location = get_object_or_404(
+            ListingLocation.objects.all(), listing=listing)
         return Response(ListingLocationSerializer(location).data, status=status.HTTP_200_OK)
 
     def delete(self, request, listing_pk):
         with transaction.atomic():
             listing = get_object_or_404(Listing.objects.all(), pk=listing_pk)
-            location = get_object_or_404(ListingLocation.objects.all(), listing=listing)
+            location = get_object_or_404(
+                ListingLocation.objects.all(), listing=listing)
             listing.location = None
             listing.save(update_fields=['location'])
             location.delete()
-            
+
             return Response({}, status=status.HTTP_204_NO_CONTENT)
 
 
-# class ListingImageView(APIView):
-#     def get(self, request, image_id)
+def getImage(request, pk):
+
+    image = get_object_or_404(ListingImage.objects.all(), pk=pk)
+    return HttpResponse(f'<img src={image.image.url} />')

@@ -9,5 +9,6 @@ listings_router = routers.NestedDefaultRouter(router, 'listings', lookup='listin
 listings_router.register('images', views.ListingImageViewSet, basename='listing-images')
 
 urlpatterns = [
-    path('listings/<int:listing_pk>/location/', views.ListingLocationView.as_view())
+    path('listings/<int:listing_pk>/location/', views.ListingLocationView.as_view()),
+    path('media/images/<int:pk>/', views.getImage)
 ] + router.urls + listings_router.urls
