@@ -11,3 +11,6 @@ ALLOWED_HOSTS = ['krezer-donewithit.herokuapp.com']
 DATABASES = {
     'default': dj_database_url.config() #reads the DATABASE_URL environment variable, parses the connection and returns dictionary
 }
+
+DEFAULT_FILE_STORAGE = 'storages.backends.ftp.FTPStorage'
+FTP_STORAGE_LOCATION = os.environ['FTP_STORAGE_LOCATION']

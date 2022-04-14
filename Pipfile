@@ -16,6 +16,7 @@ pillow = "*"
 django-debug-toolbar = "*"
 whitenoise = "*"
 mysqlclient = "*"
+django-storages = "*"
 
 [dev-packages]
 autopep8 = "*"
