@@ -3,7 +3,7 @@ from django.core.validators import MinValueValidator
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 
-from DoneWithItBackend.validators import validate_file_size
+from api.validators import validate_file_size
 
 
 class User(AbstractUser):
