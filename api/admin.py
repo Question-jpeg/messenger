@@ -18,7 +18,7 @@ class ListingImageInLine(admin.TabularInline):
 
     def thumbnail(self, instance):
         if instance.image.name != '':
-            return format_html(f'<img src="{instance.image.url}" class="thumbnail" />')
+            return format_html(f'<img width="100" src="{instance.image.url}" class="thumbnail" />')
 
 @admin.register(Listing)
 class ListingAdmin(admin.ModelAdmin):
