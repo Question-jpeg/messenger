@@ -3,6 +3,8 @@ from django.core.validators import MinValueValidator
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 
+from DoneWithItBackend.validators import validate_file_size
+
 
 class User(AbstractUser):
     email = models.EmailField(unique=True)
@@ -43,4 +45,4 @@ class Listing(models.Model):
 class ListingImage(models.Model):
     listing = models.ForeignKey(
         Listing, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to='api/images')
+    image = models.ImageField(upload_to='api/images', validators=[validate_file_size])
