@@ -16,7 +16,7 @@ from .models import Listing, ListingImage, ListingLocation
 
 class ListingViewSet(ModelViewSet):
     permission_classes = [IsOwnerOrReadOnly, IsAuthenticated]
-    queryset = Listing.objects.prefetch_related('images').all()
+    queryset = Listing.objects.prefetch_related('images').select_related('location').all()
     filter_backends = [DjangoFilterBackend]
     filterset_class = ListingFilter
 
