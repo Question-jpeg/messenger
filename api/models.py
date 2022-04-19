@@ -44,6 +44,8 @@ class Listing(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='listings')
     location = models.OneToOneField(
         ListingLocation, on_delete=models.SET_NULL, null=True, blank=True, related_name='listing')
+    
+    description = models.TextField(null=True)
 
 
 class ListingImage(models.Model):

@@ -44,7 +44,12 @@ class ListingLocationSerializer(serializers.ModelSerializer):
 class ListingImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ListingImage
-        fields = ['id', 'image']
+        fields = ['id', 'image', 'image_thumbnail']
+
+    image_thumbnail = serializers.SerializerMethodField(method_name='get_image_thumbnail', read_only=True)
+
+    def get_image_thumbnail(self, obj):
+        return obj.image_thumbnail.url
 
     def save(self, **kwargs):
         image = ListingImage.objects.create(**self.validated_data, listing_id=self.context['listing_id'])
@@ -55,7 +60,7 @@ class ListingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Listing
         fields = ['id', 'title', 'images', 'price',
-                  'category', 'user', 'location']
+                  'category', 'user', 'location', 'description']
 
     images = ListingImageSerializer(many=True)
     location = ListingLocationSerializer()
@@ -64,7 +69,7 @@ class ListingSerializer(serializers.ModelSerializer):
 class CreateListingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Listing
-        fields = ['title', 'price', 'category']
+        fields = ['title', 'price', 'category', 'description']
 
     def save(self, **kwargs):
         pk = self.context['listing_id']
