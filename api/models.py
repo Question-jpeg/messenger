@@ -2,6 +2,8 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
+from imagekit.models import ImageSpecField
+from imagekit.processors import ResizeToFill
 
 from api.validators import validate_file_size
 
@@ -40,9 +42,14 @@ class Listing(models.Model):
         Category, on_delete=models.PROTECT, related_name='listings')
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='listings')
-    location = models.OneToOneField(ListingLocation, on_delete=models.SET_NULL, null=True, blank=True, related_name='listing')
+    location = models.OneToOneField(
+        ListingLocation, on_delete=models.SET_NULL, null=True, blank=True, related_name='listing')
+
 
 class ListingImage(models.Model):
     listing = models.ForeignKey(
         Listing, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to='api/images', validators=[validate_file_size])
+    image = models.ImageField(upload_to='api/images',
+                              validators=[validate_file_size])
+    image_thumbnail = ImageSpecField(source='image', processors=[
+                                     ResizeToFill(200, 100)], format='JPEG', options={'quality': 50})

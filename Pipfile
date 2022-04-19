@@ -18,6 +18,7 @@ whitenoise = "*"
 mysqlclient = "*"
 django-storages = "*"
 boto3 = "*"
+django-imagekit = "*"
 
 [dev-packages]
 autopep8 = "*"
