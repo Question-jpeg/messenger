@@ -2,8 +2,6 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
-from imagekit.models import ImageSpecField
-from imagekit.processors import ResizeToFill
 
 from api.validators import validate_file_size
 
@@ -53,5 +51,3 @@ class ListingImage(models.Model):
         Listing, on_delete=models.CASCADE, related_name='images')
     image = models.ImageField(upload_to='api/images',
                               validators=[validate_file_size])
-    image_thumbnail = ImageSpecField(source='image', processors=[
-                                     ResizeToFill(200, 100)], format='JPEG', options={'quality': 50})

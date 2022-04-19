@@ -42,7 +42,6 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'djoser',
-    'imagekit',
     'debug_toolbar',
     'api'
 ]
