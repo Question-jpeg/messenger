@@ -19,6 +19,9 @@ mysqlclient = "*"
 django-storages = "*"
 boto3 = "*"
 django-imagekit = "*"
+django-thumbnails = "*"
+sorl-thumbnail = "*"
+redis = "*"
 
 [dev-packages]
 autopep8 = "*"
