@@ -44,8 +44,8 @@ class ListingLocationSerializer(serializers.ModelSerializer):
 class ListingImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ListingImage
-        fields = ['id', 'image', 'thumbnail_large']
-        read_only_fields = ['thumbnail_large']
+        fields = ['id', 'image', 'thumbnail_sm', 'thumbnail_lg']
+        read_only_fields = ['thumbnail_sm', 'thumbnail_lg']
 
     def save(self, **kwargs):
         image = ListingImage.objects.create(**self.validated_data, listing_id=self.context['listing_id'])
