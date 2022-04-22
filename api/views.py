@@ -10,11 +10,12 @@ from django_filters.rest_framework import DjangoFilterBackend
 from api.filters import ListingFilter
 from api.permissions import IsObjInListingOwnerOrReadOnly, IsOwnerOrReadOnly
 
-from api.serializers import CreateListingSerializer, ListingImageSerializer, ListingLocationSerializer, ListingSerializer
+from api.serializers import ListingImageSerializer, ListingLocationSerializer, ListingSerializer
 from .models import Listing, ListingImage, ListingLocation
 
 
 class ListingViewSet(ModelViewSet):
+    serializer_class = ListingSerializer
     permission_classes = [IsOwnerOrReadOnly, IsAuthenticated]
     queryset = Listing.objects.prefetch_related('images').select_related('location').all()
     filter_backends = [DjangoFilterBackend]
@@ -22,12 +23,6 @@ class ListingViewSet(ModelViewSet):
 
     def get_serializer_context(self):
         return {'request': self.request, 'user_id': self.request.user.id, 'listing_id': self.kwargs.get('pk', None)}
-
-    def get_serializer_class(self):
-        if self.request.method in ['POST', 'PUT', 'PATCH']:
-            return CreateListingSerializer
-
-        return ListingSerializer
 
 
 class ListingImageViewSet(ModelViewSet):

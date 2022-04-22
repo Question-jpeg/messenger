@@ -57,15 +57,10 @@ class ListingSerializer(serializers.ModelSerializer):
         model = Listing
         fields = ['id', 'title', 'images', 'price',
                   'category', 'user', 'location', 'description']
+        read_only_fields = ['user']
 
-    images = ListingImageSerializer(many=True)
-    location = ListingLocationSerializer()
-
-
-class CreateListingSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Listing
-        fields = ['title', 'price', 'category', 'description']
+    images = ListingImageSerializer(many=True, read_only=True)
+    location = ListingLocationSerializer(read_only=True)
 
     def save(self, **kwargs):
         pk = self.context['listing_id']
@@ -87,6 +82,4 @@ class CreateListingSerializer(serializers.ModelSerializer):
                 **self.validated_data, user_id=user_id)
 
             return self.instance
-        
-        
 

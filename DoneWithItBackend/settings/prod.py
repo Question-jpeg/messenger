@@ -12,7 +12,7 @@ DATABASES = {
     'default': dj_database_url.config() #reads the DATABASE_URL environment variable, parses the connection and returns dictionary
 }
 
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+DEFAULT_FILE_STORAGE = 'api.storages.CustomS3Boto3Storage'
 
 AWS_ACCESS_KEY_ID = os.environ['BUCKETEER_AWS_ACCESS_KEY_ID']
 AWS_SECRET_ACCESS_KEY = os.environ['BUCKETEER_AWS_SECRET_ACCESS_KEY']
