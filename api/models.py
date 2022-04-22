@@ -53,8 +53,8 @@ class ListingImage(models.Model):
         Listing, on_delete=models.CASCADE, related_name='images')
     image = models.ImageField(upload_to='api/images',
                               validators=[validate_file_size])
-    thumbnail_sm = ProcessedImageField(upload_to='api/images/thumbnails', format='JPEG',  options={'quality': 30}, null=True, blank=True)
-    thumbnail_lg = ProcessedImageField(upload_to='api/images/thumbnails', format='JPEG',  options={'quality': 50}, null=True, blank=True)
+    thumbnail_sm = ProcessedImageField(upload_to='api/images/thumbnails/small', format='JPEG',  options={'quality': 30}, null=True, blank=True)
+    thumbnail_lg = ProcessedImageField(upload_to='api/images/thumbnails/large', format='JPEG',  options={'quality': 50}, null=True, blank=True)
 
     def save(self, *args, **kwargs):
         self.thumbnail_sm = self.image.file
