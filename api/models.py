@@ -54,7 +54,7 @@ class ListingImage(models.Model):
     image = models.ImageField(upload_to='api/images',
                               validators=[validate_file_size])
     thumbnail_large = ProcessedImageField(upload_to='api/images/thumbnails', processors=[
-                                          ResizeToFill(500, 500)], format='JPEG',  options={'quality': 50}, null=True, blank=True)
+                                          ResizeToFill(1000, 1000)], format='JPEG',  options={'quality': 50}, null=True, blank=True)
 
     def save(self, *args, **kwargs):
         self.thumbnail_large = self.image.file
