@@ -25,6 +25,10 @@ class ListingAdmin(admin.ModelAdmin):
     list_display = ['title', 'price', 'category', 'user', 'location']
     inlines = [ListingImageInLine]
 
+@admin.register(ListingImage)
+class ListingImageAdmin(admin.ModelAdmin):
+    list_display = ['listing', 'image']
+
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ['title']
