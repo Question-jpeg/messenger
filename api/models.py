@@ -54,9 +54,9 @@ class ListingImage(models.Model):
     image = models.ImageField(upload_to='api/images',
                               validators=[validate_file_size])
     thumbnail_card = ProcessedImageField(upload_to='api/images/thumbnails/small', format='JPEG', processors=[
-                                         ResizeToFill(400, 200)], options={'quality': 30}, null=True, blank=True)
+                                         ResizeToFill(400, 200)], null=True, blank=True)
     thumbnail_detail = ProcessedImageField(
-        upload_to='api/images/thumbnails/large', format='JPEG', processors=[ResizeToFill(600, 600)], options={'quality': 50}, null=True, blank=True)
+        upload_to='api/images/thumbnails/large', format='JPEG', processors=[ResizeToFill(600, 600)], null=True, blank=True)
 
     def save(self, *args, **kwargs):
         self.thumbnail_card = self.image.file
