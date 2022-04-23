@@ -56,7 +56,7 @@ class ListingImage(models.Model):
     thumbnail_card = ProcessedImageField(upload_to='api/images/thumbnails/small', format='JPEG', processors=[
                                          ResizeToFill(800, 400)], null=True, blank=True)
     thumbnail_detail = ProcessedImageField(
-        upload_to='api/images/thumbnails/large', format='JPEG', processors=[ResizeToFill(600, 600)], null=True, blank=True)
+        upload_to='api/images/thumbnails/large', format='JPEG', processors=[ResizeToFill(900, 900)], null=True, blank=True)
 
     def save(self, *args, **kwargs):
         self.thumbnail_card = self.image.file
