@@ -1,7 +1,8 @@
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.db import transaction
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
@@ -11,9 +12,17 @@ from api.filters import ListingFilter
 from api.pagination import DefaultPagination
 from api.permissions import IsObjInListingOwnerOrReadOnly, IsOwnerOrReadOnly
 
-from api.serializers import ListingImageSerializer, ListingLocationSerializer, ListingSerializer
-from .models import Listing, ListingImage, ListingLocation
+from api.serializers import CategorySerializer, ListingImageSerializer, ListingLocationSerializer, ListingSerializer
+from .models import Category, Listing, ListingImage, ListingLocation
 
+class CategoryViewSet(ModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+
+    def get_permissions(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return [IsAuthenticated()]
+        return [IsAdminUser()]
 
 class ListingViewSet(ModelViewSet):
     serializer_class = ListingSerializer

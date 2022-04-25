@@ -1,7 +1,7 @@
 from django.db import transaction
 from rest_framework import serializers
 from djoser.serializers import UserSerializer as BaseUserSerializer, UserCreateSerializer as BaseUserCreateSerializer
-from .models import Listing, ListingImage, ListingLocation
+from .models import Category, Listing, ListingImage, ListingLocation
 
 
 class UserCreateSerializer(BaseUserCreateSerializer):
@@ -83,3 +83,7 @@ class ListingSerializer(serializers.ModelSerializer):
 
             return self.instance
 
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'title']
