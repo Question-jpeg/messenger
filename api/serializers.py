@@ -68,13 +68,15 @@ class ListingSerializer(serializers.ModelSerializer):
         title = self.validated_data['title']
         price = self.validated_data['price']
         category = self.validated_data['category']
+        description = self.validated_data['description']
         
         try:
             listing = Listing.objects.get(pk=pk)
             listing.title = title
             listing.price = price
             listing.category = category
-            listing.save(update_fields=['title', 'price', 'category'])
+            listing.description = description
+            listing.save(update_fields=['title', 'price', 'category', 'description'])
 
             self.instance = listing
         except Listing.DoesNotExist:
