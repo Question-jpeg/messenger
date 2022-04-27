@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import transaction
 from rest_framework import serializers
 from djoser.serializers import UserSerializer as BaseUserSerializer, UserCreateSerializer as BaseUserCreateSerializer
@@ -59,7 +60,7 @@ class ListingSerializer(serializers.ModelSerializer):
                   'category', 'user', 'location', 'description']
         read_only_fields = ['user']
 
-    images = ListingImageSerializer(many=True, read_only=True)
+    images = ListingImageSerializer(many=True, read_only=settings.DEBUG)
     location = ListingLocationSerializer(read_only=True)
 
     def save(self, **kwargs):
