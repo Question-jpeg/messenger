@@ -1,4 +1,3 @@
-from decimal import Decimal
 from django.conf import settings
 from django.db import transaction
 from rest_framework import serializers
@@ -47,8 +46,11 @@ class ListingSerializer(serializers.ModelSerializer):
 class CreateListingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Listing
-        fields = ['id', 'title', 'price',
+        fields = ['id', 'title', 'images', 'price',
                   'category', 'latitude', 'longitude', 'description']
+
+    images = serializers.ListField(
+        child=ListingImageSerializer(), default=[], allow_empty=True, write_only=True)
 
     def save(self, **kwargs):
         with transaction.atomic():
@@ -74,9 +76,9 @@ class CreateListingSerializer(serializers.ModelSerializer):
                 self.instance = listing
             except Listing.DoesNotExist:
                 self.instance = Listing.objects.create(
-                    **self.validated_data, user_id=user_id)
+                    title=title, price=price, category=category, description=description, latitude=latitude, longitude=longitude, user_id=user_id)
 
-            images = self.context['request'].FILES.getlist('images')
+            images = self.validated_data['images']
             listingImages = [ListingImage(image=image, listing_id=self.instance.id)
                              for image in images]
 
