@@ -10,18 +10,7 @@ from api.validators import validate_file_size
 
 class User(AbstractUser):
     email = models.EmailField(unique=True)
-    name = models.CharField(max_length=255)
-
-
-class ListingLocation(models.Model):
-    latitude = models.DecimalField(
-        max_digits=10,
-        decimal_places=7
-    )
-    longitude = models.DecimalField(
-        max_digits=10,
-        decimal_places=7
-    )
+    name = models.CharField(max_length=255)    
 
 
 class Category(models.Model):
@@ -42,8 +31,18 @@ class Listing(models.Model):
         Category, on_delete=models.PROTECT, related_name='listings')
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='listings')
-    location = models.OneToOneField(
-        ListingLocation, on_delete=models.SET_NULL, null=True, blank=True, related_name='listing')
+    latitude = models.DecimalField(
+        max_digits=10,
+        decimal_places=7,
+        null=True,
+        blank=True
+    )
+    longitude = models.DecimalField(
+        max_digits=10,
+        decimal_places=7,
+        null=True,
+        blank=True
+    )
 
     description = models.TextField(null=True, blank=True)
 

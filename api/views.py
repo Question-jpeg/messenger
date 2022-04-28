@@ -12,8 +12,8 @@ from api.filters import ListingFilter
 from api.pagination import DefaultPagination
 from api.permissions import IsObjInListingOwnerOrReadOnly, IsOwnerOrReadOnly
 
-from api.serializers import CategorySerializer, ListingImageSerializer, ListingLocationSerializer, ListingSerializer
-from .models import Category, Listing, ListingImage, ListingLocation
+from api.serializers import CategorySerializer, CreateListingSerializer, ListingImageSerializer, ListingSerializer
+from .models import Category, Listing, ListingImage
 
 class CategoryViewSet(ModelViewSet):
     queryset = Category.objects.all()
@@ -25,15 +25,19 @@ class CategoryViewSet(ModelViewSet):
         return [IsAdminUser()]
 
 class ListingViewSet(ModelViewSet):
-    serializer_class = ListingSerializer
     permission_classes = [IsOwnerOrReadOnly, IsAuthenticated]
-    queryset = Listing.objects.prefetch_related('images').select_related('location').all()
+    queryset = Listing.objects.prefetch_related('images').all()
     filter_backends = [DjangoFilterBackend]
     filterset_class = ListingFilter
     pagination_class = DefaultPagination
 
     def get_serializer_context(self):
         return {'request': self.request, 'user_id': self.request.user.id, 'listing_id': self.kwargs.get('pk', None)}
+
+    def get_serializer_class(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return ListingSerializer
+        return CreateListingSerializer
 
 
 class ListingImageViewSet(ModelViewSet):
@@ -45,38 +49,3 @@ class ListingImageViewSet(ModelViewSet):
 
     def get_queryset(self):
         return ListingImage.objects.filter(listing_id=self.kwargs['listing_pk'])
-
-
-class ListingLocationView(APIView):
-    serializer_class = ListingLocationSerializer
-    permission_classes = [IsObjInListingOwnerOrReadOnly, IsAuthenticated]
-
-    def post(self, request, listing_pk):
-        serializer = ListingLocationSerializer(
-            data=request.data, context={'listing_id': listing_pk})
-        serializer.is_valid(raise_exception=True)
-        location = serializer.save()
-        return Response(ListingLocationSerializer(location).data, status=status.HTTP_201_CREATED)
-
-    def get(self, request, listing_pk):
-        listing = get_object_or_404(Listing.objects.all(), pk=listing_pk)
-        location = get_object_or_404(
-            ListingLocation.objects.all(), listing=listing)
-        return Response(ListingLocationSerializer(location).data, status=status.HTTP_200_OK)
-
-    def delete(self, request, listing_pk):
-        with transaction.atomic():
-            listing = get_object_or_404(Listing.objects.all(), pk=listing_pk)
-            location = get_object_or_404(
-                ListingLocation.objects.all(), listing=listing)
-            listing.location = None
-            listing.save(update_fields=['location'])
-            location.delete()
-
-            return Response({}, status=status.HTTP_204_NO_CONTENT)
-
-
-def getImage(request, pk):
-
-    image = get_object_or_404(ListingImage.objects.all(), pk=pk)
-    return HttpResponse(f'<img src={image.image.url} />')

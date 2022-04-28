@@ -9,7 +9,4 @@ router.register('categories', views.CategoryViewSet, basename='categories')
 listings_router = routers.NestedDefaultRouter(router, 'listings', lookup='listing')
 listings_router.register('images', views.ListingImageViewSet, basename='listing-images')
 
-urlpatterns = [
-    path('listings/<int:listing_pk>/location/', views.ListingLocationView.as_view()),
-    path('media/images/<int:pk>/', views.getImage)
-] + router.urls + listings_router.urls
+urlpatterns = router.urls + listings_router.urls
