@@ -47,11 +47,8 @@ class ListingSerializer(serializers.ModelSerializer):
 class CreateListingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Listing
-        fields = ['id', 'title', 'images', 'price',
+        fields = ['id', 'title', 'price',
                   'category', 'latitude', 'longitude', 'description']
-
-    images = serializers.ListField(
-        child=ListingImageSerializer(), default=[], allow_empty=True, write_only=True)
 
     def save(self, **kwargs):
         with transaction.atomic():
@@ -77,9 +74,9 @@ class CreateListingSerializer(serializers.ModelSerializer):
                 self.instance = listing
             except Listing.DoesNotExist:
                 self.instance = Listing.objects.create(
-                    title=title, price=price, category=category, description=description, latitude=latitude, longitude=longitude, user_id=user_id)
+                    **self.validated_data, user_id=user_id)
 
-            images = self.validated_data['images']
+            images = self.context['request'].FILES.getlist('images')
             listingImages = [ListingImage(image=image, listing_id=self.instance.id)
                              for image in images]
 
