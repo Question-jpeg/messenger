@@ -50,7 +50,7 @@ class CreateListingSerializer(serializers.ModelSerializer):
                   'category', 'latitude', 'longitude', 'description']
 
     images = serializers.ListField(
-        child=ListingImageSerializer(), default=[], allow_empty=True, write_only=True)
+        child=serializers.ImageField(), default=[], allow_empty=True, write_only=True)
 
     def save(self, **kwargs):
         with transaction.atomic():
@@ -79,8 +79,8 @@ class CreateListingSerializer(serializers.ModelSerializer):
                     title=title, price=price, category=category, description=description, latitude=latitude, longitude=longitude, user_id=user_id)
 
             images = self.validated_data['images']
-            listingImages = [ListingImage(image=imageObj.image, listing_id=self.instance.id)
-                             for imageObj in images]
+            listingImages = [ListingImage(image=image, listing_id=self.instance.id)
+                             for image in images]
 
             ListingImage.objects.bulk_create(listingImages)
 
