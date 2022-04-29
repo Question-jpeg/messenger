@@ -22,13 +22,13 @@ class ListingImageInLine(admin.TabularInline):
 
 @admin.register(Listing)
 class ListingAdmin(admin.ModelAdmin):
-    list_display = ['title', 'price', 'category', 'user']
+    list_display = ['id', 'title', 'price', 'category', 'user']
     inlines = [ListingImageInLine]
 
 @admin.register(ListingImage)
 class ListingImageAdmin(admin.ModelAdmin):
-    list_display = ['listing', 'image']
+    list_display = ['id', 'listing', 'image']
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ['title']
+    list_display = ['id', 'title']
