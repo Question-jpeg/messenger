@@ -79,10 +79,8 @@ class CreateListingSerializer(serializers.ModelSerializer):
                     title=title, price=price, category=category, description=description, latitude=latitude, longitude=longitude, user_id=user_id)
 
             images = self.context['request'].FILES.getlist('images')
-            listingImages = [ListingImage(image=image, listing_id=self.instance.id)
-                             for image in images]
-
-            ListingImage.objects.bulk_create(listingImages)
+            for image in images:
+                ListingImage(image=image, listing_id=self.instance.id).save()
 
             return self.instance
 
