@@ -2,7 +2,7 @@ from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
 from django.db import models
  
-""" Whenever ANY model is deleted, if it has a file field on it, delete the associated file too"""
+""" Whenever ANY model is deleted, if it has a file field on it, delete the associated file too."""
 @receiver(post_delete)
 def delete_files_when_row_deleted_from_db(sender, instance, **kwargs):
     for field in sender._meta.concrete_fields:
