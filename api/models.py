@@ -1,8 +1,10 @@
 from django.db import models
 from . import signals
+from .managers import UserManager
 from django.core.validators import MinValueValidator
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
+from django.utils.translation import gettext_lazy as _
 from imagekit.models import ProcessedImageField
 from imagekit.processors import ResizeToFill
 
@@ -10,8 +12,14 @@ from api.validators import validate_file_size
 
 
 class User(AbstractUser):
-    email = models.EmailField(unique=True)
     name = models.CharField(max_length=255)    
+    username = None
+    email = models.EmailField(_('email address'), unique=True)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
+
+    objects = UserManager() 
 
 
 class Category(models.Model):

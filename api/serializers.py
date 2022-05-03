@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.db import transaction
 from rest_framework import serializers
 from djoser.serializers import UserSerializer as BaseUserSerializer, UserCreateSerializer as BaseUserCreateSerializer
@@ -7,7 +6,7 @@ from .models import Category, Listing, ListingImage
 
 class UserCreateSerializer(BaseUserCreateSerializer):
     class Meta(BaseUserCreateSerializer.Meta):
-        fields = ['id', 'username', 'password',
+        fields = ['id', 'password',
                   'email', 'name']
 
 
