@@ -1,7 +1,19 @@
 from django.db import transaction
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from djoser.serializers import UserSerializer as BaseUserSerializer, UserCreateSerializer as BaseUserCreateSerializer
-from .models import Category, Listing, ListingImage
+from .models import Category, Listing, ListingImage, User
+
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user: User):
+        token = super().get_token(user)
+
+        token['name'] = user.name
+        token['email'] = user.email
+
+        return token
 
 
 class UserCreateSerializer(BaseUserCreateSerializer):

@@ -1,19 +1,17 @@
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, render
-from django.db import transaction
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework import permissions
-from rest_framework.response import Response
-from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView
 from django_filters.rest_framework import DjangoFilterBackend
 from api.filters import ListingFilter
 from api.pagination import DefaultPagination
 from api.permissions import IsObjInListingOwnerOrReadOnly, IsOwnerOrReadOnly
 
-from api.serializers import CategorySerializer, CreateListingSerializer, ListingImageSerializer, ListingSerializer
+from api.serializers import CategorySerializer, CreateListingSerializer, ListingImageSerializer, ListingSerializer, CustomTokenObtainPairSerializer
 from .models import Category, Listing, ListingImage
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
 
 class CategoryViewSet(ModelViewSet):
     queryset = Category.objects.all()
