@@ -9,4 +9,6 @@ router.register('categories', views.CategoryViewSet, basename='categories')
 listings_router = routers.NestedDefaultRouter(router, 'listings', lookup='listing')
 listings_router.register('images', views.ListingImageViewSet, basename='listing-images')
 
-urlpatterns = router.urls + listings_router.urls
+urlpatterns = [
+    path('expoPushToken/', views.expoPushToken.as_view())
+] + router.urls + listings_router.urls

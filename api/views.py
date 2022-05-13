@@ -1,7 +1,10 @@
+from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.views import APIView
+from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django_filters.rest_framework import DjangoFilterBackend
@@ -9,8 +12,8 @@ from api.filters import ListingFilter
 from api.pagination import DefaultPagination
 from api.permissions import IsObjInListingOwnerOrReadOnly, IsOwnerOrReadOnly
 
-from api.serializers import CategorySerializer, CreateListingSerializer, ListingImageSerializer, ListingSerializer, CustomTokenObtainPairSerializer
-from .models import Category, Listing, ListingImage
+from api.serializers import CategorySerializer, CreateListingSerializer, ListingImageSerializer, ListingSerializer, CustomTokenObtainPairSerializer, UserExpoTokenSerializer, UserSerializer
+from .models import Category, Listing, ListingImage, User
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
@@ -64,3 +67,20 @@ class ListingImageViewSet(ModelViewSet):
 
     def get_queryset(self):
         return ListingImage.objects.filter(listing_id=self.kwargs['listing_pk'])
+
+class expoPushToken(APIView):
+    permission_classes  = [IsAuthenticated]
+    serializer_class = UserExpoTokenSerializer
+
+    def get(self, request):
+        instance = get_object_or_404(User.objects.all(), id=request.user.id)
+        if instance.expoPushToken == None or instance.expoPushToken == '':
+            return Response({}, status=status.HTTP_404_NOT_FOUND)
+        
+        return Response({ "expoPushToken": instance.expoPushToken }, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = UserExpoTokenSerializer(data=request.data, context={ "user_id": request.user.id })
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

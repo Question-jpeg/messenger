@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from djoser.serializers import UserSerializer as BaseUserSerializer, UserCreateSerializer as BaseUserCreateSerializer
@@ -26,6 +27,23 @@ class UserSerializer(BaseUserSerializer):
     class Meta(BaseUserSerializer.Meta):
         fields = ['id', 'name', 'email']
 
+class UserExpoTokenSerializer(BaseUserSerializer):
+    class Meta(BaseUserSerializer.Meta):
+        fields = ['expoPushToken']
+
+    def validate_expoPushToken(self, value):
+        if value == None or value == '':
+            raise serializers.ValidationError("Expo Push Token must be set.")
+        
+        return value
+
+    def save(self, **kwargs):
+        expoPushToken = self.validated_data['expoPushToken']
+
+        instance = get_object_or_404(User.objects.all(), id=self.context['user_id'])
+        instance.expoPushToken = expoPushToken
+        instance.save()
+        return instance
 
 class ListingImageSerializer(serializers.ModelSerializer):
     class Meta:

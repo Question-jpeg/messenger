@@ -16,6 +16,8 @@ class User(AbstractUser):
     username = None
     email = models.EmailField(_('email address'), unique=True)
 
+    expoPushToken = models.CharField(max_length=255, unique=True, null=True, blank=True)
+
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
 
