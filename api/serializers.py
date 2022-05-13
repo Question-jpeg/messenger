@@ -43,8 +43,7 @@ class ListingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Listing
         fields = ['id', 'title', 'images', 'price',
-                  'category', 'user', 'location', 'description']
-        read_only_fields = ['user']
+                  'category', 'user', 'location', 'description', 'created_at']
 
     images = ListingImageSerializer(many=True)
     location = serializers.SerializerMethodField(

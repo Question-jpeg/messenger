@@ -1,5 +1,7 @@
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework import permissions
+from rest_framework.response import Response
+from rest_framework.decorators import action
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django_filters.rest_framework import DjangoFilterBackend
@@ -36,6 +38,21 @@ class ListingViewSet(ModelViewSet):
         if self.request.method in permissions.SAFE_METHODS:
             return ListingSerializer
         return CreateListingSerializer
+
+    @action(detail=False, methods=['get', 'post'], permission_classes=[IsAuthenticated])
+    def my(self, request):
+        recent_listings = Listing.objects.all().filter(user=request.user).order_by('-created_at')
+
+        for backend in self.filter_backends:
+            recent_listings = backend().filter_queryset(self.request, recent_listings, view=self)
+    
+        page = self.paginate_queryset(recent_listings)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(recent_listings, many=True)
+        return Response(serializer.data)
 
 
 class ListingImageViewSet(ModelViewSet):
