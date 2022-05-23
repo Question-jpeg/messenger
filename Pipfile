@@ -23,6 +23,7 @@ django-thumbnails = "*"
 sorl-thumbnail = "*"
 redis = "*"
 django-s3-storage = "==0.9.11"
+psycopg2 = "*"
 
 [dev-packages]
 autopep8 = "*"

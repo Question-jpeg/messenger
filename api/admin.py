@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
 from django.utils.html import format_html
-from .models import Category, Listing, ListingImage, User
+from .models import Category, Listing, ListingImage, Message, MessageFile, SentOnMessage, User
 
 
 @admin.register(User)
@@ -49,3 +49,19 @@ class ListingImageAdmin(admin.ModelAdmin):
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ['id', 'title']
+
+class SentOnMessageInLine(admin.TabularInline):
+    model = SentOnMessage
+    fk_name = "message_parent"
+
+class MessageFileInLine(admin.TabularInline):
+    model = MessageFile
+
+@admin.register(Message)
+class MessageAdmin(admin.ModelAdmin):
+    list_display = ['id', 'from_user', 'to_user', 'text']
+    inlines = [SentOnMessageInLine, MessageFileInLine]
+
+@admin.register(SentOnMessage)
+class SentOnMessageAdmin(admin.ModelAdmin):
+    list_display = ['id', 'message_parent', 'message']

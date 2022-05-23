@@ -1,9 +1,10 @@
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from djoser.serializers import UserSerializer as BaseUserSerializer, UserCreateSerializer as BaseUserCreateSerializer
-from .models import Category, Listing, ListingImage, User
+from .models import Category, Listing, ListingImage, Message, MessageFile, SentOnMessage, User
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -27,6 +28,7 @@ class UserSerializer(BaseUserSerializer):
     class Meta(BaseUserSerializer.Meta):
         fields = ['id', 'name', 'email']
 
+
 class UserExpoTokenSerializer(BaseUserSerializer):
     class Meta(BaseUserSerializer.Meta):
         fields = ['expoPushToken']
@@ -34,16 +36,18 @@ class UserExpoTokenSerializer(BaseUserSerializer):
     def validate_expoPushToken(self, value):
         if value == None or value == '':
             raise serializers.ValidationError("Expo Push Token must be set.")
-        
+
         return value
 
     def save(self, **kwargs):
         expoPushToken = self.validated_data['expoPushToken']
 
-        instance = get_object_or_404(User.objects.all(), id=self.context['user_id'])
+        instance = get_object_or_404(
+            User.objects.all(), id=self.context['user_id'])
         instance.expoPushToken = expoPushToken
         instance.save()
         return instance
+
 
 class ListingImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -107,8 +111,9 @@ class CreateListingSerializer(serializers.ModelSerializer):
                     title=title, price=price, category=category, description=description, latitude=latitude, longitude=longitude, user_id=user_id)
 
             images = self.validated_data['images']
-            for image in images:
-                ListingImage(image=image, listing_id=self.instance.id).save()
+            listToCreate = [ListingImage(
+                image=image, thumbnail_card=image, thumbnail_detail=image, listing_id=self.instance.id) for image in images]
+            ListingImage.objects.bulk_create(listToCreate)
 
             return self.instance
 
@@ -117,3 +122,127 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['id', 'title']
+
+
+class MessageFileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MessageFile
+        fields = ['id', 'file']
+
+
+class MessageReplySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = '__all__'
+
+    attached_listing = ListingSerializer()
+    files = MessageFileSerializer(many=True)
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = '__all__'
+
+    attached_listing = ListingSerializer()
+    used_for_reply_message = MessageReplySerializer()
+    files = MessageFileSerializer(many=True)
+
+    def to_representation(self, instance):
+        self.fields['attached_messages'] = SentOnMessageSerializer(many=True)
+
+        return super(MessageSerializer, self).to_representation(instance)
+
+
+class SentOnMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SentOnMessage
+        fields = ['message']
+
+    message = MessageSerializer()
+
+
+class CreateMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        exclude = ['from_user']
+
+    attached_messages = serializers.ListField(
+        child=serializers.IntegerField(), default=[], allow_empty=True, write_only=True)
+    files = serializers.ListField(
+        child=serializers.FileField(), default=[], allow_empty=True, write_only=True)
+
+    def save(self, **kwargs):
+        with transaction.atomic():
+            from_user = self.context['from_user']
+            to_user = self.validated_data['to_user']
+            files = self.validated_data['files']
+            attached_messages = sorted(
+                self.validated_data['attached_messages'])
+            del self.validated_data['files']
+            del self.validated_data['attached_messages']
+
+            self.instance = Message.objects.create(
+                **self.validated_data, from_user=from_user)
+
+            listToCreateFiles = [MessageFile(
+                message=self.instance, file=file) for file in files]
+
+            listToCreateSentOnMessages = [SentOnMessage(message_parent=self.instance, message=message)
+                                          for message in Message.objects.filter(id__in=attached_messages)]
+
+            MessageFile.objects.bulk_create(listToCreateFiles)
+            SentOnMessage.objects.bulk_create(listToCreateSentOnMessages)
+
+            return self.instance
+
+
+class UpdateMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        exclude = ['from_user', 'to_user']
+
+
+class DeleteForMeMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = ['messages']
+
+    messages = serializers.ListField(child=serializers.IntegerField())
+
+    def save(self, **kwargs):
+        from_user = self.context['from_user']
+        messages = self.validated_data['messages']
+        Message.objects.filter(from_user=from_user, pk__in=messages).update(
+            is_deleted_for_from_user=True)
+        Message.objects.filter(to_user=from_user, pk__in=messages).update(
+            is_deleted_for_to_user=True)
+
+
+class DeleteForAllMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = ['messages']
+
+    messages = serializers.ListField(child=serializers.IntegerField())
+
+    def save(self, **kwargs):
+        from_user = self.context['from_user']
+        messages = self.validated_data['messages']
+        Message.objects.filter(Q(from_user=from_user)).filter(
+            pk__in=messages).update(is_deleted_for_from_user=True, is_deleted_for_to_user=True)
+
+
+class ChatMessageFileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MessageFile
+        fields = ['id']
+
+
+class ChatMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = '__all__'
+
+    files = ChatMessageFileSerializer(many=True)
+

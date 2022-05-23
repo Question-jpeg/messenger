@@ -1,3 +1,6 @@
+import operator
+from django.db.models import Q, F, CharField
+from django.db.models.functions import Greatest, Least, Cast, Concat
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework import permissions
@@ -8,15 +11,17 @@ from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django_filters.rest_framework import DjangoFilterBackend
-from api.filters import ListingFilter
-from api.pagination import DefaultPagination
-from api.permissions import IsObjInListingOwnerOrReadOnly, IsOwnerOrReadOnly
+from api.filters import ListingFilter, MessageFilter
+from api.pagination import DefaultPagination, MessagePagination
+from api.permissions import IsObjInListingOwnerOrReadOnly, IsOwnerOrReadOnly, IsMessageOwnerOrReadOnly
 
-from api.serializers import CategorySerializer, CreateListingSerializer, ListingImageSerializer, ListingSerializer, CustomTokenObtainPairSerializer, UserExpoTokenSerializer, UserSerializer
-from .models import Category, Listing, ListingImage, User
+from api.serializers import CategorySerializer, CreateListingSerializer, CreateMessageSerializer, DeleteForAllMessageSerializer, DeleteForMeMessageSerializer, ListingImageSerializer, ListingSerializer, CustomTokenObtainPairSerializer, MessageSerializer, UpdateMessageSerializer, UserExpoTokenSerializer
+from .models import Category, Listing, ListingImage, Message, User
+
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
 
 class CategoryViewSet(ModelViewSet):
     queryset = Category.objects.all()
@@ -26,6 +31,7 @@ class CategoryViewSet(ModelViewSet):
         if self.request.method in permissions.SAFE_METHODS:
             return [IsAuthenticated()]
         return [IsAdminUser()]
+
 
 class ListingViewSet(ModelViewSet):
     permission_classes = [IsOwnerOrReadOnly, IsAuthenticated]
@@ -42,13 +48,13 @@ class ListingViewSet(ModelViewSet):
             return ListingSerializer
         return CreateListingSerializer
 
-    @action(detail=False, methods=['get', 'post'], permission_classes=[IsAuthenticated])
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def my(self, request):
-        recent_listings = Listing.objects.all().filter(user=request.user).order_by('-created_at')
+        recent_listings = Listing.objects.prefetch_related('images').filter(
+            user=request.user).order_by('-created_at')
 
-        for backend in self.filter_backends:
-            recent_listings = backend().filter_queryset(self.request, recent_listings, view=self)
-    
+        recent_listings = self.filter_queryset(recent_listings)
+
         page = self.paginate_queryset(recent_listings)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
@@ -68,19 +74,90 @@ class ListingImageViewSet(ModelViewSet):
     def get_queryset(self):
         return ListingImage.objects.filter(listing_id=self.kwargs['listing_pk'])
 
-class expoPushToken(APIView):
-    permission_classes  = [IsAuthenticated]
+
+def prefRelMessages():
+    queryset = Message.objects.all()
+    prefetch_fields = ['files', 'attached_listing__images',
+                       'used_for_reply_message__files', 'used_for_reply_message__attached_listing__images']
+    base_lookup = "attached_messages__message"
+    previous = ""
+
+    for attached in range(100):
+        prefetch_lookups = [
+            previous + prefetch_field for prefetch_field in prefetch_fields]
+
+        queryset = queryset.prefetch_related(*prefetch_lookups)
+
+        previous += base_lookup + "__"
+
+    return queryset
+
+
+class MessageViewSet(ModelViewSet):
+    permission_classes = [IsMessageOwnerOrReadOnly, IsAuthenticated]
+    pagination_class = MessagePagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = MessageFilter
+    http_method_names = ['get', 'post', 'put']
+
+    def get_queryset(self):
+        user_id = self.request.user.id
+        resultquery = ((Q(from_user__id=user_id) & Q(is_deleted_for_from_user=False)) | (
+            Q(to_user__id=user_id) & Q(is_deleted_for_to_user=False)))
+        return prefRelMessages().filter(resultquery).order_by('sent_at')
+
+    def get_serializer_context(self):
+        return {"from_user": self.request.user}
+
+    def get_serializer_class(self):
+        if self.action == 'deleteForMe':
+            return DeleteForMeMessageSerializer
+        if self.action == 'deleteForAll':
+            return DeleteForAllMessageSerializer
+        if self.request.method in permissions.SAFE_METHODS:
+            return MessageSerializer
+        if self.request.method == 'PUT':
+            return UpdateMessageSerializer
+        return CreateMessageSerializer
+
+    @action(detail=False, methods=['put'])
+    def deleteForMe(self, request):
+        serializer = DeleteForMeMessageSerializer(data=request.data, context=self.get_serializer_context())
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({}, status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=['put'])
+    def deleteForAll(self, request):
+        serializer = DeleteForAllMessageSerializer(data=request.data, context=self.get_serializer_context())
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({}, status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=['get'])
+    def chatsView(self, request):
+        queryset = self.get_queryset().annotate(slug=Concat(Cast(Least('from_user', 'to_user'),
+                                                                 output_field=CharField()), Cast(Greatest('from_user', 'to_user'), output_field=CharField()))).order_by('slug', '-sent_at').distinct('slug')
+        queryset = sorted(queryset, key=operator.attrgetter('sent_at'), reverse=True)                                                                 
+        serializer = MessageSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+class ExpoPushTokenView(APIView):
+    permission_classes = [IsAuthenticated]
     serializer_class = UserExpoTokenSerializer
 
     def get(self, request):
         instance = get_object_or_404(User.objects.all(), id=request.user.id)
         if instance.expoPushToken == None or instance.expoPushToken == '':
             return Response({}, status=status.HTTP_404_NOT_FOUND)
-        
-        return Response({ "expoPushToken": instance.expoPushToken }, status=status.HTTP_200_OK)
+
+        return Response({"expoPushToken": instance.expoPushToken}, status=status.HTTP_200_OK)
 
     def post(self, request):
-        serializer = UserExpoTokenSerializer(data=request.data, context={ "user_id": request.user.id })
+        serializer = UserExpoTokenSerializer(data=request.data, context={
+            "user_id": request.user.id})
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
