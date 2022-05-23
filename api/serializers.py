@@ -202,6 +202,10 @@ class UpdateMessageSerializer(serializers.ModelSerializer):
         model = Message
         exclude = ['from_user', 'to_user']
 
+    def save(self, **kwargs):
+        del self.validated_data['is_edited']
+        return super().save(**self.validated_data, is_edited=True)
+
 
 class DeleteForMeMessageSerializer(serializers.ModelSerializer):
     class Meta:
