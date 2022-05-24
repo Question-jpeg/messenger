@@ -12,4 +12,5 @@ listings_router.register('images', views.ListingImageViewSet, basename='listing-
 
 urlpatterns = [
     path('expoPushToken/', views.ExpoPushTokenView.as_view()),
+    path('setAvatar/', views.AvatarView.as_view())
 ] + router.urls + listings_router.urls

@@ -4,6 +4,7 @@ from django.db.models.functions import Greatest, Least, Cast, Concat
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework import permissions
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.views import APIView
@@ -15,7 +16,7 @@ from api.filters import ListingFilter, MessageFilter
 from api.pagination import DefaultPagination, MessagePagination
 from api.permissions import IsObjInListingOwnerOrReadOnly, IsOwnerOrReadOnly, IsMessageOwnerOrReadOnly
 
-from api.serializers import CategorySerializer, CreateListingSerializer, CreateMessageSerializer, DeleteForAllMessageSerializer, DeleteForMeMessageSerializer, ListingImageSerializer, ListingSerializer, CustomTokenObtainPairSerializer, MessageSerializer, UpdateMessageSerializer, UserExpoTokenSerializer
+from api.serializers import CategorySerializer, ChatMessageSerializer, CreateListingSerializer, CreateMessageSerializer, DeleteForAllMessageSerializer, DeleteForMeMessageSerializer, ListingImageSerializer, ListingSerializer, CustomTokenObtainPairSerializer, MessageSerializer, UpdateMessageSerializer, UserAvatarSerializer, UserExpoTokenSerializer, UserSerializer
 from .models import Category, Listing, ListingImage, Message, User
 
 
@@ -35,10 +36,13 @@ class CategoryViewSet(ModelViewSet):
 
 class ListingViewSet(ModelViewSet):
     permission_classes = [IsOwnerOrReadOnly, IsAuthenticated]
-    queryset = Listing.objects.prefetch_related('images').all()
-    filter_backends = [DjangoFilterBackend]
+    queryset = Listing.objects.prefetch_related(
+        'images').order_by('-created_at')
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ListingFilter
     pagination_class = DefaultPagination
+    search_fields = ['title', 'description']
+    ordering_fields = ['price', 'created_at']
 
     def get_serializer_context(self):
         return {'request': self.request, 'user_id': self.request.user.id, 'listing_id': self.kwargs.get('pk', None)}
@@ -75,13 +79,19 @@ class ListingImageViewSet(ModelViewSet):
         return ListingImage.objects.filter(listing_id=self.kwargs['listing_pk'])
 
 
-def prefRelMessages():
-    queryset = Message.objects.all()
-    prefetch_fields = ['files', 'attached_listing__images',
-                       'used_for_reply_message__files', 'used_for_reply_message__attached_listing__images']
+def prefRelMessages(user_id):
+    resultquery = ((Q(from_user__id=user_id) & Q(is_deleted_for_from_user=False)) | (
+            Q(to_user__id=user_id) & Q(is_deleted_for_to_user=False)))
+
+    queryset = Message.objects.filter(resultquery)
+    prefetch_fields = ['files', 'from_user', 'to_user', 'attached_listing__images',
+                       'used_for_reply_message__files', 'used_for_reply_message__from_user', 'used_for_reply_message__attached_listing__images']
+    select_fields = ['from_user', 'to_user', 'used_for_reply_message__from_user']
     base_lookup = "attached_messages__message"
     previous = ""
 
+
+    queryset = queryset.select_related(*select_fields)
     for attached in range(100):
         prefetch_lookups = [
             previous + prefetch_field for prefetch_field in prefetch_fields]
@@ -96,18 +106,17 @@ def prefRelMessages():
 class MessageViewSet(ModelViewSet):
     permission_classes = [IsMessageOwnerOrReadOnly, IsAuthenticated]
     pagination_class = MessagePagination
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = MessageFilter
+    search_fields = ['text', 'used_for_reply_message__text',
+                     'attached_listing__title', 'attached_listing__description']
     http_method_names = ['get', 'post', 'put']
 
     def get_queryset(self):
-        user_id = self.request.user.id
-        resultquery = ((Q(from_user__id=user_id) & Q(is_deleted_for_from_user=False)) | (
-            Q(to_user__id=user_id) & Q(is_deleted_for_to_user=False)))
-        return prefRelMessages().filter(resultquery).order_by('sent_at')
+        return prefRelMessages(self.request.user.id).order_by('sent_at')
 
     def get_serializer_context(self):
-        return {"from_user": self.request.user}
+        return {"from_user": self.request.user, "request": self.request}
 
     def get_serializer_class(self):
         if self.action == 'deleteForMe':
@@ -122,14 +131,16 @@ class MessageViewSet(ModelViewSet):
 
     @action(detail=False, methods=['put'])
     def deleteForMe(self, request):
-        serializer = DeleteForMeMessageSerializer(data=request.data, context=self.get_serializer_context())
+        serializer = DeleteForMeMessageSerializer(
+            data=request.data, context=self.get_serializer_context())
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({}, status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['put'])
     def deleteForAll(self, request):
-        serializer = DeleteForAllMessageSerializer(data=request.data, context=self.get_serializer_context())
+        serializer = DeleteForAllMessageSerializer(
+            data=request.data, context=self.get_serializer_context())
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({}, status=status.HTTP_204_NO_CONTENT)
@@ -138,10 +149,25 @@ class MessageViewSet(ModelViewSet):
     def chatsView(self, request):
         queryset = self.get_queryset().annotate(slug=Concat(Cast(Least('from_user', 'to_user'),
                                                                  output_field=CharField()), Cast(Greatest('from_user', 'to_user'), output_field=CharField()))).order_by('slug', '-sent_at').distinct('slug')
-        queryset = sorted(queryset, key=operator.attrgetter('sent_at'), reverse=True)                                                                 
-        serializer = MessageSerializer(queryset, many=True)
+        queryset = sorted(queryset, key=operator.attrgetter(
+            'sent_at'), reverse=True)
+        serializer = ChatMessageSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+class AvatarView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserAvatarSerializer
+
+    def get(self, request):
+        instance = get_object_or_404(User.objects.all(), pk=request.user.id)
+        return Response(UserSerializer(instance, context={"request": request}).data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = UserAvatarSerializer(data=request.data, context={'user_id': request.user.id})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        
+        return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
 
 
 class ExpoPushTokenView(APIView):

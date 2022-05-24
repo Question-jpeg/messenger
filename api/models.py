@@ -1,12 +1,10 @@
 from django.db import models
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes.fields import GenericForeignKey
 from django.core.validators import MinValueValidator
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext_lazy as _
 from imagekit.models import ProcessedImageField
-from imagekit.processors import ResizeToFill
+from imagekit.processors import SmartResize
 
 from . import signals
 from .managers import UserManager
@@ -17,6 +15,9 @@ class User(AbstractUser):
     name = models.CharField(max_length=255)
     username = None
     email = models.EmailField(_('email address'), unique=True)
+    avatar = models.ImageField(upload_to='api/avatars', validators=[validate_file_size], null=True, blank=True)
+    avatar_thumbnail_sm = ProcessedImageField(upload_to='api/avatars/thumbnails/small', format='JPEG', processors=[
+                                         SmartResize(100, 100)], null=True, blank=True)
 
     expoPushToken = models.CharField(
         max_length=255, unique=True, null=True, blank=True)
@@ -71,9 +72,9 @@ class ListingImage(models.Model):
     image = models.ImageField(upload_to='api/images',
                               validators=[validate_file_size])
     thumbnail_card = ProcessedImageField(upload_to='api/images/thumbnails/small', format='JPEG', processors=[
-                                         ResizeToFill(800, 400)], null=True, blank=True)
+                                         SmartResize(800, 400)], null=True, blank=True)
     thumbnail_detail = ProcessedImageField(
-        upload_to='api/images/thumbnails/large', format='JPEG', processors=[ResizeToFill(900, 900)], null=True, blank=True)
+        upload_to='api/images/thumbnails/large', format='JPEG', processors=[SmartResize(900, 900)], null=True, blank=True)
 
 
 
@@ -107,6 +108,9 @@ class SentOnMessage(models.Model):
         Message, on_delete=models.CASCADE, related_name="attached_messages")
     message = models.ForeignKey(
         Message, on_delete=models.CASCADE, related_name="parent_messages")
+
+    class Meta:
+        ordering = ['message__sent_at']
 
     def __str__(self) -> str:
         return "Пересланное сообщение"

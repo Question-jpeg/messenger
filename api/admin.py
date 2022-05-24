@@ -9,7 +9,7 @@ from .models import Category, Listing, ListingImage, Message, MessageFile, SentO
 class UserAdmin(BaseUserAdmin):
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        (_('Personal info'), {'fields': ('name',)}),
+        (_('Personal info'), {'fields': ('name', 'avatar', 'avatar_thumbnail_sm')}),
         (_('Services'), {'fields': ('expoPushToken',)}),
         (_('Permissions'), {'fields': ('is_active', 'is_staff', 'is_superuser',
                                        'groups', 'user_permissions')}),

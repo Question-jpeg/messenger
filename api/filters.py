@@ -6,7 +6,8 @@ class ListingFilter(FilterSet):
     class Meta:
         model = Listing
         fields = {
-            'category': ['exact']
+            'category': ['exact'],
+            'user': ['exact']
         }
 
 class MessageFilter(FilterSet):

@@ -6,7 +6,6 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from djoser.serializers import UserSerializer as BaseUserSerializer, UserCreateSerializer as BaseUserCreateSerializer
 from .models import Category, Listing, ListingImage, Message, MessageFile, SentOnMessage, User
 
-
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user: User):
@@ -14,6 +13,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         token['name'] = user.name
         token['email'] = user.email
+        # token['avatar'] = user.avatar.url
+        # token['avatar_thumbnail_sm'] = user.avatar_thumbnail_sm.url
 
         return token
 
@@ -26,7 +27,7 @@ class UserCreateSerializer(BaseUserCreateSerializer):
 
 class UserSerializer(BaseUserSerializer):
     class Meta(BaseUserSerializer.Meta):
-        fields = ['id', 'name', 'email']
+        fields = ['name', 'email', 'avatar', 'avatar_thumbnail_sm']
 
 
 class UserExpoTokenSerializer(BaseUserSerializer):
@@ -48,6 +49,20 @@ class UserExpoTokenSerializer(BaseUserSerializer):
         instance.save()
         return instance
 
+class UserAvatarSerializer(BaseUserSerializer):
+    class Meta(BaseUserSerializer.Meta):
+        fields = ['avatar']
+
+    def save(self, **kwargs):
+        user_id = self.context['user_id']
+        avatar = self.validated_data['avatar']
+        
+        user = get_object_or_404(User.objects.all(), pk=user_id)
+        user.avatar = avatar
+        user.avatar_thumbnail_sm = avatar
+        user.save()
+
+        return user
 
 class ListingImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -135,6 +150,7 @@ class MessageReplySerializer(serializers.ModelSerializer):
         model = Message
         fields = '__all__'
 
+    from_user = UserSerializer()
     attached_listing = ListingSerializer()
     files = MessageFileSerializer(many=True)
 
@@ -144,6 +160,8 @@ class MessageSerializer(serializers.ModelSerializer):
         model = Message
         fields = '__all__'
 
+    from_user = UserSerializer()
+    to_user = UserSerializer()
     attached_listing = ListingSerializer()
     used_for_reply_message = MessageReplySerializer()
     files = MessageFileSerializer(many=True)
@@ -175,10 +193,8 @@ class CreateMessageSerializer(serializers.ModelSerializer):
     def save(self, **kwargs):
         with transaction.atomic():
             from_user = self.context['from_user']
-            to_user = self.validated_data['to_user']
             files = self.validated_data['files']
-            attached_messages = sorted(
-                self.validated_data['attached_messages'])
+            attached_messages = self.validated_data['attached_messages']
             del self.validated_data['files']
             del self.validated_data['attached_messages']
 
@@ -189,7 +205,7 @@ class CreateMessageSerializer(serializers.ModelSerializer):
                 message=self.instance, file=file) for file in files]
 
             listToCreateSentOnMessages = [SentOnMessage(message_parent=self.instance, message=message)
-                                          for message in Message.objects.filter(id__in=attached_messages)]
+                                          for message in Message.objects.filter(Q(from_user=from_user) | Q(to_user=from_user)).filter(id__in=attached_messages)]
 
             MessageFile.objects.bulk_create(listToCreateFiles)
             SentOnMessage.objects.bulk_create(listToCreateSentOnMessages)
@@ -237,16 +253,13 @@ class DeleteForAllMessageSerializer(serializers.ModelSerializer):
             pk__in=messages).update(is_deleted_for_from_user=True, is_deleted_for_to_user=True)
 
 
-class ChatMessageFileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = MessageFile
-        fields = ['id']
-
-
-class ChatMessageSerializer(serializers.ModelSerializer):
+class ChatMessageSerializer(MessageSerializer):
     class Meta:
         model = Message
         fields = '__all__'
 
-    files = ChatMessageFileSerializer(many=True)
-
+    from_user = UserSerializer()
+    to_user = UserSerializer()
+    attached_listing = ListingSerializer()
+    used_for_reply_message = MessageReplySerializer()
+    files = MessageFileSerializer(many=True)
