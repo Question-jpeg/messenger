@@ -17,7 +17,7 @@ class User(AbstractUser):
     email = models.EmailField(_('email address'), unique=True)
     avatar = models.ImageField(upload_to='api/avatars', validators=[validate_file_size], null=True, blank=True)
     avatar_thumbnail_sm = ProcessedImageField(upload_to='api/avatars/thumbnails/small', format='JPEG', processors=[
-                                         SmartResize(200, 200)], null=True, blank=True)
+                                         SmartResize(300, 300)], null=True, blank=True)
 
     expoPushToken = models.CharField(
         max_length=255, unique=True, null=True, blank=True)
