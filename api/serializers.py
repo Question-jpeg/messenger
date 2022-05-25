@@ -30,7 +30,16 @@ class UserCreateSerializer(BaseUserCreateSerializer):
 
 class UserSerializer(BaseUserSerializer):
     class Meta(BaseUserSerializer.Meta):
-        fields = ['name', 'email', 'avatar', 'avatar_thumbnail_sm']
+        fields = ['id', 'name', 'email', 'avatar', 'avatar_thumbnail_sm']
+        read_only_fields = ['avatar_thumbnail_sm', 'email']
+    
+    def save(self, **kwargs):
+        user_id = self.context['request'].user.id
+        avatar = self.validated_data['avatar']
+        queryset = User.objects.filter(pk=user_id)
+        queryset.update(**self.validated_data, avatar_thumbnail_sm=avatar)
+        return queryset.first()
+        
 
 
 class UserExpoTokenSerializer(BaseUserSerializer):
@@ -51,22 +60,6 @@ class UserExpoTokenSerializer(BaseUserSerializer):
         instance.expoPushToken = expoPushToken
         instance.save()
         return instance
-
-
-class UserAvatarSerializer(BaseUserSerializer):
-    class Meta(BaseUserSerializer.Meta):
-        fields = ['avatar']
-
-    def save(self, **kwargs):
-        user_id = self.context['user_id']
-        avatar = self.validated_data['avatar']
-
-        user = get_object_or_404(User.objects.all(), pk=user_id)
-        user.avatar = avatar
-        user.avatar_thumbnail_sm = avatar
-        user.save()
-
-        return user
 
 
 class ListingImageSerializer(serializers.ModelSerializer):

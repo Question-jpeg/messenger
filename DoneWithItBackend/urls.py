@@ -17,12 +17,16 @@ from django.conf import settings
 from django.contrib import admin
 from django.conf.urls.static import static
 from django.urls import path, include
-from api.views import CustomTokenObtainPairView
+from rest_framework_nested import routers
+from api import views as apiViews
 
-urlpatterns = [
+apiUserRouter = routers.DefaultRouter()
+apiUserRouter.register('auth/users', apiViews.UserViewSet, 'users')
+
+urlpatterns = apiUserRouter.urls + [
     path('api/', include('api.urls')),
     path('admin/', admin.site.urls),
-    path('auth/jwt/create/', CustomTokenObtainPairView.as_view()),
+    path('auth/jwt/create/', apiViews.CustomTokenObtainPairView.as_view()),
     path('auth/', include('djoser.urls')),
     path('auth/', include('djoser.urls.jwt')),
     path('__debug__/', include('debug_toolbar.urls')),

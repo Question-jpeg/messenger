@@ -15,14 +15,34 @@ from django_filters.rest_framework import DjangoFilterBackend
 from api import serializers
 from api.filters import ListingFilter, MessageFilter
 from api.pagination import DefaultPagination, MessagePagination
-from api.permissions import IsObjInListingOwnerOrReadOnly, IsOwnerOrReadOnly, IsMessageOwnerOrReadOnly
+from api.permissions import IsUserOrReadOnly, IsObjInListingOwnerOrReadOnly, IsOwnerOrReadOnly, IsMessageOwnerOrReadOnly
 
-from api.serializers import CategorySerializer, ChatMessageSerializer, CreateListingSerializer, CreateMessageSerializer, DeleteForAllMessageSerializer, DeleteForMeMessageSerializer, ListingImageSerializer, ListingSerializer, CustomTokenObtainPairSerializer, MarkAsReadMessageSerializer, MessageSerializer, UpdateMessageSerializer, UserAvatarSerializer, UserExpoTokenSerializer, UserSerializer
+from api.serializers import CategorySerializer, ChatMessageSerializer, CreateListingSerializer, CreateMessageSerializer, DeleteForAllMessageSerializer, DeleteForMeMessageSerializer, ListingImageSerializer, ListingSerializer, CustomTokenObtainPairSerializer, MarkAsReadMessageSerializer, MessageSerializer, UpdateMessageSerializer, UserCreateSerializer, UserExpoTokenSerializer, UserSerializer
 from .models import Category, Listing, ListingImage, Message, User
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+class UserViewSet(ModelViewSet):
+    queryset = User.objects.all()
+    permission_classes = [IsUserOrReadOnly, IsAuthenticated]
+    http_method_names = ['get', 'post', 'put']
+
+    def get_serializer_context(self):
+        return {"request": self.request}
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return UserCreateSerializer
+        
+        return UserSerializer
+
+    def update(self, request, *args, **kwargs):
+        serializer = UserSerializer(data=request.data, context=self.get_serializer_context())
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        return Response(UserSerializer(instance, context=self.get_serializer_context()).data, status=status.HTTP_200_OK)
 
 
 class CategoryViewSet(ModelViewSet):
@@ -164,21 +184,6 @@ class MessageViewSet(ModelViewSet):
             'sent_at'), reverse=True)
         serializer = ChatMessageSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-class AvatarView(APIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = UserAvatarSerializer
-
-    def get(self, request):
-        instance = get_object_or_404(User.objects.all(), pk=request.user.id)
-        return Response(UserSerializer(instance, context={"request": request}).data, status=status.HTTP_200_OK)
-
-    def post(self, request):
-        serializer = UserAvatarSerializer(data=request.data, context={'user_id': request.user.id})
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        
-        return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
 
 
 class ExpoPushTokenView(APIView):
