@@ -16,8 +16,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         token['name'] = user.name
         token['email'] = user.email
-        # token['avatar'] = user.avatar.url
-        # token['avatar_thumbnail_sm'] = user.avatar_thumbnail_sm.url
+        token['avatar'] = user.avatar.url
+        token['avatar_thumbnail_sm'] = user.avatar_thumbnail_sm.url
 
         return token
 
