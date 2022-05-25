@@ -6,6 +6,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from djoser.serializers import UserSerializer as BaseUserSerializer, UserCreateSerializer as BaseUserCreateSerializer
 from .models import Category, Listing, ListingImage, Message, MessageFile, SentOnMessage, User
 
+
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user: User):
@@ -49,6 +50,7 @@ class UserExpoTokenSerializer(BaseUserSerializer):
         instance.save()
         return instance
 
+
 class UserAvatarSerializer(BaseUserSerializer):
     class Meta(BaseUserSerializer.Meta):
         fields = ['avatar']
@@ -56,13 +58,14 @@ class UserAvatarSerializer(BaseUserSerializer):
     def save(self, **kwargs):
         user_id = self.context['user_id']
         avatar = self.validated_data['avatar']
-        
+
         user = get_object_or_404(User.objects.all(), pk=user_id)
         user.avatar = avatar
         user.avatar_thumbnail_sm = avatar
         user.save()
 
         return user
+
 
 class ListingImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -233,9 +236,9 @@ class DeleteForMeMessageSerializer(serializers.ModelSerializer):
     def save(self, **kwargs):
         from_user = self.context['from_user']
         messages = self.validated_data['messages']
-        Message.objects.filter(from_user=from_user, pk__in=messages).update(
+        Message.objects.filter(Q(from_user=from_user) & Q(pk__in=messages)).update(
             is_deleted_for_from_user=True)
-        Message.objects.filter(to_user=from_user, pk__in=messages).update(
+        Message.objects.filter(Q(to_user=from_user) & Q(pk__in=messages)).update(
             is_deleted_for_to_user=True)
 
 
@@ -249,8 +252,21 @@ class DeleteForAllMessageSerializer(serializers.ModelSerializer):
     def save(self, **kwargs):
         from_user = self.context['from_user']
         messages = self.validated_data['messages']
-        Message.objects.filter(Q(from_user=from_user)).filter(
-            pk__in=messages).update(is_deleted_for_from_user=True, is_deleted_for_to_user=True)
+        Message.objects.filter(Q(from_user=from_user) & Q(pk__in=messages)).update(
+            is_deleted_for_from_user=True, is_deleted_for_to_user=True)
+
+
+class MarkAsReadMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = ['messages'] 
+
+    messages = serializers.ListField(child=serializers.IntegerField())
+
+    def save(self, **kwargs):
+        from_user = self.context['from_user']
+        messages = self.validated_data['messages']
+        Message.objects.filter(Q(to_user=from_user) & Q(pk__in=messages)).update(is_read=True)
 
 
 class ChatMessageSerializer(MessageSerializer):

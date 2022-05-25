@@ -93,6 +93,7 @@ class Message(models.Model):
     is_deleted_for_to_user = models.BooleanField(default=False)
 
     is_edited = models.BooleanField(default=False)
+    is_read = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         return self.text

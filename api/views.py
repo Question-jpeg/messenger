@@ -12,11 +12,12 @@ from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django_filters.rest_framework import DjangoFilterBackend
+from api import serializers
 from api.filters import ListingFilter, MessageFilter
 from api.pagination import DefaultPagination, MessagePagination
 from api.permissions import IsObjInListingOwnerOrReadOnly, IsOwnerOrReadOnly, IsMessageOwnerOrReadOnly
 
-from api.serializers import CategorySerializer, ChatMessageSerializer, CreateListingSerializer, CreateMessageSerializer, DeleteForAllMessageSerializer, DeleteForMeMessageSerializer, ListingImageSerializer, ListingSerializer, CustomTokenObtainPairSerializer, MessageSerializer, UpdateMessageSerializer, UserAvatarSerializer, UserExpoTokenSerializer, UserSerializer
+from api.serializers import CategorySerializer, ChatMessageSerializer, CreateListingSerializer, CreateMessageSerializer, DeleteForAllMessageSerializer, DeleteForMeMessageSerializer, ListingImageSerializer, ListingSerializer, CustomTokenObtainPairSerializer, MarkAsReadMessageSerializer, MessageSerializer, UpdateMessageSerializer, UserAvatarSerializer, UserExpoTokenSerializer, UserSerializer
 from .models import Category, Listing, ListingImage, Message, User
 
 
@@ -41,7 +42,7 @@ class ListingViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ListingFilter
     pagination_class = DefaultPagination
-    search_fields = ['title', 'description']
+    search_fields = ['title', 'description', 'user__name']
     ordering_fields = ['price', 'created_at']
 
     def get_serializer_context(self):
@@ -108,8 +109,9 @@ class MessageViewSet(ModelViewSet):
     pagination_class = MessagePagination
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = MessageFilter
-    search_fields = ['text', 'used_for_reply_message__text',
-                     'attached_listing__title', 'attached_listing__description']
+    search_fields = ['text', 'from_user__name', 'to_user__name', 'used_for_reply_message__text',
+                     'used_for_reply_message__from_user__name', 'used_for_reply_message__to_user__name',
+                     'attached_listing__title', 'attached_listing__description', 'attached_listing__user__name']
     http_method_names = ['get', 'post', 'put']
 
     def get_queryset(self):
@@ -119,6 +121,8 @@ class MessageViewSet(ModelViewSet):
         return {"from_user": self.request.user, "request": self.request}
 
     def get_serializer_class(self):
+        if self.action == 'markRead':
+            return MarkAsReadMessageSerializer
         if self.action == 'deleteForMe':
             return DeleteForMeMessageSerializer
         if self.action == 'deleteForAll':
@@ -128,6 +132,13 @@ class MessageViewSet(ModelViewSet):
         if self.request.method == 'PUT':
             return UpdateMessageSerializer
         return CreateMessageSerializer
+
+    @action(detail=False, methods=['put'])
+    def markRead(self, request):
+        serializer = MarkAsReadMessageSerializer(data=request.data, context=self.get_serializer_context())
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({}, status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['put'])
     def deleteForMe(self, request):
