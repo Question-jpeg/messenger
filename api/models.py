@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext_lazy as _
 from imagekit.models import ProcessedImageField
-from imagekit.processors import SmartResize
+from imagekit.processors import SmartResize, ResizeToFill
 
 from . import signals
 from .managers import UserManager
@@ -17,7 +17,7 @@ class User(AbstractUser):
     email = models.EmailField(_('email address'), unique=True)
     avatar = models.ImageField(upload_to='api/avatars', validators=[validate_file_size], null=True, blank=True)
     avatar_thumbnail_sm = ProcessedImageField(upload_to='api/avatars/thumbnails/small', format='JPEG', processors=[
-                                         SmartResize(100, 100)], null=True, blank=True)
+                                         ResizeToFill(100, 100)], null=True, blank=True)
 
     expoPushToken = models.CharField(
         max_length=255, unique=True, null=True, blank=True)
@@ -72,9 +72,9 @@ class ListingImage(models.Model):
     image = models.ImageField(upload_to='api/images',
                               validators=[validate_file_size])
     thumbnail_card = ProcessedImageField(upload_to='api/images/thumbnails/small', format='JPEG', processors=[
-                                         SmartResize(800, 400)], null=True, blank=True)
+                                         ResizeToFill(800, 400)], null=True, blank=True)
     thumbnail_detail = ProcessedImageField(
-        upload_to='api/images/thumbnails/large', format='JPEG', processors=[SmartResize(900, 900)], null=True, blank=True)
+        upload_to='api/images/thumbnails/large', format='JPEG', processors=[ResizeToFill(900, 900)], null=True, blank=True)
 
 
 
