@@ -32,14 +32,6 @@ class UserCreateSerializer(BaseUserCreateSerializer):
 class UserSerializer(BaseUserSerializer):
     class Meta(BaseUserSerializer.Meta):
         fields = ['id', 'name', 'email', 'avatar', 'avatar_thumbnail_sm']
-        read_only_fields = ['avatar_thumbnail_sm', 'email']
-    
-    def save(self, **kwargs):
-        user_id = self.context['request'].user.id
-        avatar = self.validated_data['avatar']
-        queryset = User.objects.filter(pk=user_id)
-        queryset.update(**self.validated_data, avatar_thumbnail_sm=avatar)
-        return queryset.first()
         
 
 

@@ -38,12 +38,6 @@ class UserViewSet(ModelViewSet):
         
         return UserSerializer
 
-    def update(self, request, *args, **kwargs):
-        serializer = UserSerializer(data=request.data, context=self.get_serializer_context())
-        serializer.is_valid(raise_exception=True)
-        instance = serializer.save()
-        return Response(UserSerializer(instance, context=self.get_serializer_context()).data, status=status.HTTP_200_OK)
-
 
 class CategoryViewSet(ModelViewSet):
     queryset = Category.objects.all()
