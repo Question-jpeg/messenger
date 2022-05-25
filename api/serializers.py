@@ -4,7 +4,9 @@ from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from djoser.serializers import UserSerializer as BaseUserSerializer, UserCreateSerializer as BaseUserCreateSerializer
+
 from .models import Category, Listing, ListingImage, Message, MessageFile, SentOnMessage, User
+from .utilities.pushNotifications import send_push_message
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -186,7 +188,7 @@ class SentOnMessageSerializer(serializers.ModelSerializer):
 class CreateMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
-        exclude = ['from_user']
+        exclude = ['from_user', 'is_deleted_for_from_user', 'is_deleted_for_to_user', 'is_edited', 'is_read']
 
     attached_messages = serializers.ListField(
         child=serializers.IntegerField(), default=[], allow_empty=True, write_only=True)
@@ -196,6 +198,8 @@ class CreateMessageSerializer(serializers.ModelSerializer):
     def save(self, **kwargs):
         with transaction.atomic():
             from_user = self.context['from_user']
+            to_user = self.validated_data['to_user']
+            text = self.validated_data['text']
             files = self.validated_data['files']
             attached_messages = self.validated_data['attached_messages']
             del self.validated_data['files']
@@ -212,6 +216,11 @@ class CreateMessageSerializer(serializers.ModelSerializer):
 
             MessageFile.objects.bulk_create(listToCreateFiles)
             SentOnMessage.objects.bulk_create(listToCreateSentOnMessages)
+
+            try:
+                send_push_message(to_user.expoPushToken, from_user.name, text)
+            except:
+                pass
 
             return self.instance
 
