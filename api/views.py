@@ -58,7 +58,7 @@ class CategoryViewSet(ModelViewSet):
 class ListingViewSet(ModelViewSet):
     permission_classes = [IsOwnerOrReadOnly, IsAuthenticated]
     queryset = Listing.objects.prefetch_related(
-        'images').order_by('-created_at')
+        'images').select_related('user').order_by('-created_at')
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ListingFilter
     pagination_class = DefaultPagination

@@ -80,6 +80,7 @@ class ListingSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'images', 'price',
                   'category', 'user', 'location', 'description', 'created_at']
 
+    user = UserSerializer()
     images = ListingImageSerializer(many=True)
     location = serializers.SerializerMethodField(
         method_name='get_location_obj')
