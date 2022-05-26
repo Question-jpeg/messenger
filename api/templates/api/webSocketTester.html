@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSocketTester</title>
+  </head>
+  <body>
+    <h1>Let's chat!</h1>
+
+    <h3>Message</h3>
+    <form id="form">
+      <input type="text" name="message" />
+    </form>
+
+    <div id="messages"></div>
+
+    <script type="text/javascript">
+      const ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
+      const url = `${ws_scheme}://${window.location.host}/websocket-server/?token=`;
+
+      const chatSocket = new WebSocket(url);
+
+      chatSocket.onmessage = function (e) {
+        const data = JSON.parse(e.data);
+        console.log("Data:", data);
+
+        if (data.type === "message") {
+          const messages = document.getElementById("messages");
+
+          messages.insertAdjacentHTML(
+            "beforeend",
+            `<div>
+                <p>${data.message.text}</p>
+            </div>`
+          );
+        }
+      };
+
+      const form = document.getElementById("form");
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const messageText = e.target.message.value;
+        const message = {'to_user': {'id': 2}, 'text': messageText}
+        // if (!chatSocket.CLOSED)
+        chatSocket.send(
+          JSON.stringify({
+            message: message,
+          })
+        );
+        form.reset();
+      });
+    </script>
+  </body>
+</html>

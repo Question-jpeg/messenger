@@ -32,6 +32,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -90,7 +91,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'DoneWithItBackend.wsgi.application'
-
+ASGI_APPLICATION = 'DoneWithItBackend.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases

@@ -11,5 +11,6 @@ listings_router = routers.NestedDefaultRouter(router, 'listings', lookup='listin
 listings_router.register('images', views.ListingImageViewSet, basename='listing-images')
 
 urlpatterns = [
-    path('expoPushToken/', views.ExpoPushTokenView.as_view())
+    path('expoPushToken/', views.ExpoPushTokenView.as_view()),
+    path('webSocketTester/', views.webSocketTester)
 ] + router.urls + listings_router.urls

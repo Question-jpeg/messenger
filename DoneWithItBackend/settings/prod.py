@@ -12,6 +12,15 @@ DATABASES = {
     'default': dj_database_url.config() #reads the DATABASE_URL environment variable, parses the connection and returns dictionary
 }
 
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [os.environ['REDIS_URL'],],
+        },
+    },
+}
+
 DEFAULT_FILE_STORAGE = 'api.storages.CustomS3Boto3Storage'
 
 AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']

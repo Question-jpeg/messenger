@@ -1,7 +1,7 @@
 import operator
 from django.db.models import Q, F, CharField
 from django.db.models.functions import Greatest, Least, Cast, Concat
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework import permissions
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -197,3 +197,6 @@ class ExpoPushTokenView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+def webSocketTester(request):
+    return render(request, 'api/webSocketTester.html')
