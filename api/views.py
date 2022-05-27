@@ -13,7 +13,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django_filters.rest_framework import DjangoFilterBackend
 from api import serializers
-from api.filters import ListingFilter, MessageFilter
+from api.filters import ListingFilter
 from api.pagination import DefaultPagination, MessagePagination
 from api.permissions import IsUserOrReadOnly, IsObjInListingOwnerOrReadOnly, IsOwnerOrReadOnly, IsMessageOwnerOrReadOnly
 
@@ -121,8 +121,7 @@ def prefRelMessages(user_id):
 class MessageViewSet(ModelViewSet):
     permission_classes = [IsMessageOwnerOrReadOnly, IsAuthenticated]
     pagination_class = MessagePagination
-    filter_backends = [DjangoFilterBackend, SearchFilter]
-    filterset_class = MessageFilter
+    filter_backends = [SearchFilter]
     search_fields = ['text', 'from_user__name', 'to_user__name', 'used_for_reply_message__text',
                      'used_for_reply_message__from_user__name',
                      'attached_listing__title', 'attached_listing__description', 'attached_listing__user__name']
@@ -171,6 +170,22 @@ class MessageViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({}, status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=['get'])
+    def chatView(self, request):
+        ids = request.GET.get('user__in', None)
+        if ids:
+            queryset = self.get_queryset().filter(Q(from_user__id__in=ids) | Q(to_user__id__in=ids))
+            queryset = self.filter_queryset(queryset)
+
+            page = self.paginate_queryset(queryset)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
+            
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({}, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=False, methods=['get'])
     def chatsView(self, request):

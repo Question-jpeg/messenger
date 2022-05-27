@@ -10,10 +10,9 @@ class ListingFilter(FilterSet):
             'user': ['exact']
         }
 
-class MessageFilter(FilterSet):
-    class Meta:
-        model = Message
-        fields = {
-            'from_user__id': ['range'],
-            'to_user__id': ['range']
-        }
+# class MessageFilter(django_filters.FilterSet):
+#     class Meta:
+#         model = Message
+#         fields = {
+#             'user__in': ['exact']
+#         }
