@@ -176,6 +176,7 @@ class MessageViewSet(ModelViewSet):
     def chatsView(self, request):
         queryset = self.get_queryset().annotate(slug=Concat(Cast(Least('from_user', 'to_user'),
                                                                  output_field=CharField()), Cast(Greatest('from_user', 'to_user'), output_field=CharField()))).order_by('slug', '-sent_at').distinct('slug')
+        self.search_fields = ['from_user__name', 'to_user__name']
         queryset = self.filter_queryset(queryset)
 
         queryset = sorted(queryset, key=operator.attrgetter(
