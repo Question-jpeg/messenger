@@ -80,7 +80,7 @@ class ListingViewSet(ModelViewSet):
             return self.get_paginated_response(serializer.data)
 
         serializer = self.get_serializer(recent_listings, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class ListingImageViewSet(ModelViewSet):
@@ -124,7 +124,7 @@ class MessageViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = MessageFilter
     search_fields = ['text', 'from_user__name', 'to_user__name', 'used_for_reply_message__text',
-                     'used_for_reply_message__from_user__name', 'used_for_reply_message__to_user__name',
+                     'used_for_reply_message__from_user__name',
                      'attached_listing__title', 'attached_listing__description', 'attached_listing__user__name']
     http_method_names = ['get', 'post', 'put']
 
@@ -141,6 +141,8 @@ class MessageViewSet(ModelViewSet):
             return DeleteForMeMessageSerializer
         if self.action == 'deleteForAll':
             return DeleteForAllMessageSerializer
+        if self.action == 'chatsView':
+            return ChatMessageSerializer
         if self.request.method in permissions.SAFE_METHODS:
             return MessageSerializer
         if self.request.method == 'PUT':
@@ -174,9 +176,17 @@ class MessageViewSet(ModelViewSet):
     def chatsView(self, request):
         queryset = self.get_queryset().annotate(slug=Concat(Cast(Least('from_user', 'to_user'),
                                                                  output_field=CharField()), Cast(Greatest('from_user', 'to_user'), output_field=CharField()))).order_by('slug', '-sent_at').distinct('slug')
+        queryset = self.filter_queryset(queryset)
+
         queryset = sorted(queryset, key=operator.attrgetter(
             'sent_at'), reverse=True)
-        serializer = ChatMessageSerializer(queryset, many=True)
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+            
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
