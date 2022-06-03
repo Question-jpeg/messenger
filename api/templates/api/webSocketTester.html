@@ -8,8 +8,14 @@
   </head>
   <body>
     <h1>Let's chat!</h1>
-    
-    
+
+    <form id="config">
+      <h3>Token</h3>
+      <h3 id="code"></h3>
+      <input type="text" name="token" />
+      <button type="submit">Configure socket</button>
+    </form>
+
     <form id="form">
       <h3>User ID</h3>
       <input type="text" name="user" />
@@ -21,41 +27,62 @@
     <div id="messages"></div>
 
     <script type="text/javascript">
-      const ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
-      const url = `${ws_scheme}://${window.location.host}/websocket-server/`;
+      let socket = null;
+      const code = document.getElementById('code')
 
-      const chatSocket = new WebSocket(url);
+      const configSocket = (token) => {
+        const ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
+        const url = `${ws_scheme}://${window.location.host}/websocket-server/?token=${token}`;
 
-      chatSocket.onmessage = function (e) {
-        const data = JSON.parse(e.data);
-        console.log("Data:", data);
+        const chatSocket = new WebSocket(url);
 
-        if (data.type === "message") {
-          const messages = document.getElementById("messages");
+        chatSocket.onmessage = function (e) {
+          const data = JSON.parse(e.data);
+          console.log("Data:", data);
 
-          messages.insertAdjacentHTML(
-            "beforeend",
-            `<div>
-                <p>${data.message.text}</p>
-            </div>`
-          );
+          if (data.type === "message") {
+            const messages = document.getElementById("messages");
+
+            messages.insertAdjacentHTML(
+              "beforeend",
+              `<div>
+                  <p>${data.message.text}</p>
+              </div>`
+            );
+          }
+        };
+
+        chatSocket.onerror = function (e) {
+          alert('Invalid token')
         }
+
+        code.textContent = token.substring(token.length - 5)
+        socket = chatSocket;
       };
 
       const form = document.getElementById("form");
       form.addEventListener("submit", (e) => {
         e.preventDefault();
-        const messageText = e.target.message.value;
-        const userId = e.target.user.value;
-        const message = {'to_user': {'id': userId}, 'text': messageText}
-        // if (!chatSocket.CLOSED)
-        chatSocket.send(
-          JSON.stringify({
-            message: message,
-          })
-        );
-        form.reset();
+        if (socket) {
+          const messageText = e.target.message.value;
+          const userId = e.target.user.value;
+          const message = { to_user: { id: userId }, text: messageText };
+          // if (!chatSocket.CLOSED)
+          socket.send(
+            JSON.stringify({
+              message: message,
+            })
+          );
+          form.reset();
+        }
       });
+
+      const tokenForm = document.getElementById('config');
+      tokenForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        configSocket(e.target.token.value)
+      })
+
     </script>
   </body>
 </html>
