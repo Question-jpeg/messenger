@@ -21,7 +21,7 @@ class TokenAuthMiddleware(BaseMiddleware):
 
     async def __call__(self, scope, receive, send):
         try:
-            token_key = dict(scope['headers'])[b'authorization'].decode().split(' ')[-1]
+            token_key = scope['query_string'].decode().split('=')[-1]
         except:
             token_key = None
         scope['user'] = await get_user(token_key) if token_key is not None else AnonymousUser()
