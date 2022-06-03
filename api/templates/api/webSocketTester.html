@@ -8,17 +8,21 @@
   </head>
   <body>
     <h1>Let's chat!</h1>
-
-    <h3>Message</h3>
+    
+    
     <form id="form">
+      <h3>User ID</h3>
+      <input type="text" name="user" />
+      <h3>Message</h3>
       <input type="text" name="message" />
+      <button type="submit">Submit</button>
     </form>
 
     <div id="messages"></div>
 
     <script type="text/javascript">
       const ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
-      const url = `${ws_scheme}://${window.location.host}/websocket-server/?token=`;
+      const url = `${ws_scheme}://${window.location.host}/websocket-server/`;
 
       const chatSocket = new WebSocket(url);
 
@@ -42,7 +46,8 @@
       form.addEventListener("submit", (e) => {
         e.preventDefault();
         const messageText = e.target.message.value;
-        const message = {'to_user': {'id': 2}, 'text': messageText}
+        const userId = e.target.user.value;
+        const message = {'to_user': {'id': userId}, 'text': messageText}
         // if (!chatSocket.CLOSED)
         chatSocket.send(
           JSON.stringify({

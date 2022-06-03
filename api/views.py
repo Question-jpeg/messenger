@@ -128,7 +128,7 @@ class MessageViewSet(ModelViewSet):
     http_method_names = ['get', 'post', 'put']
 
     def get_queryset(self):
-        return prefRelMessages(self.request.user.id).order_by('sent_at')
+        return prefRelMessages(self.request.user.id).order_by('-sent_at')
 
     def get_serializer_context(self):
         return {"from_user": self.request.user, "request": self.request}
