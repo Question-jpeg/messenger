@@ -26,7 +26,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 class UserViewSet(ModelViewSet):
     queryset = User.objects.all()
-    permission_classes = [IsUserOrReadOnly, IsAuthenticated]
+    permission_classes = [IsUserOrReadOnly]
     http_method_names = ['get', 'post', 'put']
 
     def get_serializer_context(self):
